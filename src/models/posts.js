@@ -21,6 +21,16 @@ const postsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  liked: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  likedBy: {
+    type: Array,
+    required: false,
+    default: [],
+  },
 });
 
 const Posts = mongoose.model("postsSchema", postsSchema);

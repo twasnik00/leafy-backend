@@ -13,6 +13,9 @@ import plantRoutes from "./src/routes/plantRoutes.js";
 import postRoutes from "./src/routes/postRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import favouriteRoutes from "./src/routes/favouriteRoutes.js";
+import passport from "passport";
+import cookieSession from "cookie-session";
+// const  passportSetup = require("./src/utils/utils")
 
 // Configurations //
 const fileName = fileURLToPath(import.meta.url);
@@ -24,10 +27,19 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-// app.use(cors());
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["leafy"],
+    maxAge: 24 * 60 * 60 * 100,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(
   cors({
     origin: "http://localhost:3001",
+    methods: "GET,POST,PUT,DELETE",
   })
 );
 

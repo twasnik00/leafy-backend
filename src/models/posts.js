@@ -5,6 +5,10 @@ const postsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  progressId: {
+    type: String,
+    required: true,
+  },
   plantId: {
     type: String,
     required: true,

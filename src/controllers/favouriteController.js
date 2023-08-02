@@ -40,3 +40,12 @@ export const getFavouritePlants = async (req, res) => {
   const favouritePlants = await Favourite.find({ userId: id });
   res.status(200).json(favouritePlants);
 };
+export const deleteFavouritePlants = async (req, res) => {
+  const { id } = req.params;
+  const fav = await Favourite.findById(id);
+  if (!fav) {
+    return res.status(404).json({ error: "Favourite not found" });
+  }
+  const favouritePlants = await Favourite.deleteOne({ _id: id });
+  res.status(200).json(favouritePlants);
+};

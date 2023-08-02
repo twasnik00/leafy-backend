@@ -5,6 +5,7 @@ import { saveReminder } from "./remindersController.js";
 import { savePost } from "./postController.js";
 import { sendNotificationToExpo } from "../services/notificationService.js";
 import Favourite from "../models/favourites.js";
+import Progress from "../models/progress.js";
 
 export const savePlant = async (req, res) => {
   try {
@@ -72,14 +73,81 @@ export const savePlant = async (req, res) => {
     });
 
     const result = await newPlant.save();
-    // console.log("result", result);
+    console.log("result", result, result?._id);
     if (reminders) {
       saveReminder(req.body, result).then((res) => {
         console.log("reminder result", res);
       });
     }
+
+    res
+      .status(200)
+      .json({ message: "Plant saved successfully", plantId: result?._id });
+  } catch (error) {
+    console.log("error", error?.message);
+    res.status(500).json({ error: error });
+  }
+};
+export const getPlantsByUserAndId = async (req, res) => {
+  try {
+    const { userId, plantId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const plants = await Plant.findById(plantId);
+    if (!plants) {
+      return res.status(404).json({ error: "Plant not found" });
+    }
+    const plantsObj = await Plant.findOne({ userId: userId, _id: plantId });
+    res.status(200).json(plantsObj);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+};
+export const savePlantProgress = async (req, res) => {
+  try {
+    const {
+      userId,
+      plantId,
+      plantName,
+      plantNotes,
+      picture,
+      perenulaPlantId,
+      share,
+      platPosition,
+      plantLat,
+      plantLong,
+      city,
+      state,
+    } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const plants = await Plant.findById(plantId);
+    if (!plants) {
+      return res.status(404).json({ error: "Plant not found" });
+    }
+    const newProgress = new Progress({
+      userId,
+      plantId,
+      plantName,
+      plantNotes,
+      picture,
+      progressDate: new Date(),
+      perenulaPlantId,
+      share,
+      platPosition,
+      plantLat,
+      plantLong,
+      city,
+      state,
+    });
+    const progress = await newProgress.save();
+    console.log("progress", progress);
     if (share) {
-      savePost(req.body, result).then((res) => {
+      savePost(req.body, progress?._id, plantId).then((res) => {
         console.log("post result", res);
       });
     }
@@ -88,7 +156,7 @@ export const savePlant = async (req, res) => {
       title: "Plant added",
       body: `You have successfully added your plant ${plantName} `,
       data: {
-        plantId: result?._id,
+        plantId: plantId,
         perenulaPlantId: perenulaPlantId,
       },
     };
@@ -99,9 +167,55 @@ export const savePlant = async (req, res) => {
       .catch((err) => {
         console.log(err);
       });
-    res.status(200).json({ message: "Plant saved successfully" });
+    res
+      .status(200)
+      .json({ message: "You have successfully added to progress" });
   } catch (error) {
-    console.log("error", error?.message);
+    res.status(500).json({ error: error });
+  }
+};
+export const getPlantProgress = async (req, res) => {
+  try {
+    const { userId, plantId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const plants = await Plant.findById(plantId);
+    if (!plants) {
+      return res.status(404).json({ error: "Plant not found" });
+    }
+    const progress = await Progress.find({ userId: userId, plantId: plantId });
+    res.status(200).json(progress);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+};
+export const updatePlantProgress = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const progressUpdatedData = req.body;
+    const progress = await Progress.findByIdAndUpdate(id, progressUpdatedData, {
+      new: true,
+    });
+    if (!progress) {
+      return res.status(404).json({ error: "Progress not found" });
+    }
+    return res.status(200).json(progress);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+};
+export const deletePlantProgress = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("id", id);
+    const progress = await Progress.findByIdAndDelete(id);
+    if (!progress) {
+      return res.status(404).json({ error: "Progress not found" });
+    }
+    return res.status(200).json(progress);
+  } catch (error) {
     res.status(500).json({ error: error });
   }
 };
@@ -131,9 +245,10 @@ export const updatePlant = async (req, res) => {
       .catch((err) => {
         console.log(err);
       });
-    return res
-      .status(200)
-      .json({ message: "Successfully updated your plant progress" });
+    return res.status(200).json({
+      message: "Successfully updated your plant progress",
+      plantId: plantId,
+    });
   } catch (error) {
     res.status(500).json({ error: error });
   }
@@ -170,7 +285,18 @@ export const getAllPlantsFromPerenual = async (req, res) => {
     res.status(500).json({ error: error });
   }
 };
-
+export const getSeasonPlantFromPerenual = async (req, res) => {
+  try {
+    const { page, indoor = 1 } = req.params;
+    const plant = await axios.get(
+      `https://perenual.com/api/species-list?page=${page}&indoor=${indoor}&key=${process.env.PERENUAL_API_KEY}`
+    );
+    page;
+    res.status(200).json(plant.data);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+};
 export const getPlantFromPerenualById = async (req, res) => {
   try {
     const { id, userId, page } = req.params;
@@ -181,12 +307,10 @@ export const getPlantFromPerenualById = async (req, res) => {
       userId: userId,
       perenulaPlantId: id,
     });
-    res
-      .status(200)
-      .json({
-        ...plant.data,
-        favourite: findFavourite?.length > 0 ? true : false,
-      });
+    res.status(200).json({
+      ...plant.data,
+      favourite: findFavourite?.length > 0 ? true : false,
+    });
   } catch (error) {
     res.status(500).json({ error: error });
   }

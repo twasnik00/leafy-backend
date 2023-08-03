@@ -52,7 +52,7 @@ export const googleOAuthLoginOrRegister = async (req, res) => {
     if (
       user?.email === email &&
       user?.oAuthToken &&
-      registrationType === "GOOGLE"
+      user?.registrationType === "GOOGLE"
     ) {
       user.deviceToken = deviceToken;
       token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
@@ -62,7 +62,7 @@ export const googleOAuthLoginOrRegister = async (req, res) => {
         firstName: firstName,
         surName: "",
         email: email,
-        password: "",
+        password: "GOOGLE_OAUTH_REGISTERED",
         location: "",
         registeredDate: new Date(),
         oAuthToken: oAuthToken,
